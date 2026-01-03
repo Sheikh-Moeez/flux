@@ -4,6 +4,7 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../core/constants/colors.dart';
 import '../core/services/auth_service.dart';
 import '../core/widgets/glass_card.dart';
+import '../core/services/secure_storage_service.dart';
 import '../providers/finance_provider.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -17,12 +18,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final _nameController = TextEditingController();
   bool _isEditing = false;
   bool _isLoading = false;
+  bool _isBiometricEnabled = false;
 
   @override
   void initState() {
     super.initState();
     final user = Provider.of<AuthService>(context, listen: false).currentUser;
     _nameController.text = user?.displayName ?? '';
+    _loadBiometricState();
+  }
+
+  Future<void> _loadBiometricState() async {
+    final enabled = await SecureStorageService.instance.isBiometricEnabled();
+    if (mounted) setState(() => _isBiometricEnabled = enabled);
   }
 
   Future<void> _updateProfile() async {
@@ -72,13 +80,31 @@ class _ProfileScreenState extends State<ProfileScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'My Profile',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'My Profile',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () {
+                      Provider.of<AuthService>(
+                        context,
+                        listen: false,
+                      ).revokeMpin();
+                    },
+                    icon: Icon(
+                      PhosphorIcons.lockKey(PhosphorIconsStyle.bold),
+                      color: Colors.white,
+                    ),
+                    tooltip: 'Lock App',
+                  ),
+                ],
               ),
               const SizedBox(height: 24),
               GlassCard(
@@ -142,13 +168,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     ),
                                   ),
                                 const SizedBox(height: 4),
-                                Text(
-                                  user?.email ?? '',
-                                  style: TextStyle(
-                                    color: Colors.white.withValues(alpha: 0.6),
-                                    fontSize: 14,
-                                  ),
-                                ),
+                                // Text(
+                                //   user?.email ?? '',
+                                //   style: TextStyle(
+                                //     color: Colors.white.withValues(alpha: 0.6),
+                                //     fontSize: 14,
+                                //   ),
+                                // ),
                               ],
                             ),
                           ),
@@ -200,11 +226,49 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     _buildActionItem(
                       icon: PhosphorIcons.export(PhosphorIconsStyle.bold),
                       title: 'Export Data (CSV)',
-                      onTap: () {
-                        Provider.of<FinanceProvider>(
+                      onTap: () async {
+                        final path = await Provider.of<FinanceProvider>(
                           context,
                           listen: false,
                         ).exportToCsv();
+
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Exported to: $path'),
+                              backgroundColor: AppColors.accentGreen,
+                            ),
+                          );
+                        }
+                      },
+                    ),
+                    Container(
+                      height: 1,
+                      color: Colors.white.withValues(alpha: 0.1),
+                    ),
+                    SwitchListTile(
+                      title: const Text(
+                        'Biometric Unlock',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      secondary: Icon(
+                        PhosphorIcons.fingerprint(PhosphorIconsStyle.bold),
+                        color: Colors.white,
+                      ),
+                      value: _isBiometricEnabled,
+                      activeTrackColor: AppColors.accentGreen,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                      ),
+                      onChanged: (val) async {
+                        setState(() => _isBiometricEnabled = val);
+                        await SecureStorageService.instance.setBiometricEnabled(
+                          val,
+                        );
                       },
                     ),
                     Container(

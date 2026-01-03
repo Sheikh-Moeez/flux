@@ -15,7 +15,7 @@ class DebtScreen extends StatefulWidget {
 }
 
 class _DebtScreenState extends State<DebtScreen> {
-  String _filter = 'ALL'; // ALL, I_OWE, THEY_OWE
+  String _filter = 'ALL'; // ALL, To Pay, To Collect
 
   @override
   Widget build(BuildContext context) {
@@ -42,9 +42,9 @@ class _DebtScreenState extends State<DebtScreen> {
                     children: [
                       _buildFilterChip('All', 'ALL'),
                       const SizedBox(width: 12),
-                      _buildFilterChip('I Owe', 'I_OWE'),
+                      _buildFilterChip('To Pay', 'To Pay'),
                       const SizedBox(width: 12),
-                      _buildFilterChip('They Owe', 'THEY_OWE'),
+                      _buildFilterChip('To Collect', 'To Collect'),
                     ],
                   ),
                 ],
@@ -88,7 +88,9 @@ class _DebtScreenState extends State<DebtScreen> {
                     itemCount: debts.length,
                     itemBuilder: (context, index) {
                       final debt = debts[index];
-                      final isIOwe = debt.type == 'I_OWE';
+                      // Also handle old data types if necessary, but primary is To Pay
+                      final isToPay =
+                          debt.type == 'To Pay' || debt.type == 'I_OWE';
 
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 12.0),
@@ -101,7 +103,7 @@ class _DebtScreenState extends State<DebtScreen> {
                                 Container(
                                   padding: const EdgeInsets.all(12),
                                   decoration: BoxDecoration(
-                                    color: isIOwe
+                                    color: isToPay
                                         ? AppColors.accentRed.withValues(
                                             alpha: 0.1,
                                           )
@@ -111,14 +113,14 @@ class _DebtScreenState extends State<DebtScreen> {
                                     shape: BoxShape.circle,
                                   ),
                                   child: Icon(
-                                    isIOwe
+                                    isToPay
                                         ? PhosphorIcons.arrowDownLeft(
                                             PhosphorIconsStyle.bold,
                                           ) // In (Debt)
                                         : PhosphorIcons.arrowUpRight(
                                             PhosphorIconsStyle.bold,
                                           ), // Out (Credit)
-                                    color: isIOwe
+                                    color: isToPay
                                         ? AppColors.accentRed
                                         : AppColors.accentGreen,
                                   ),
@@ -157,7 +159,7 @@ class _DebtScreenState extends State<DebtScreen> {
                                         name: 'PKR',
                                       ).format(debt.amount),
                                       style: TextStyle(
-                                        color: isIOwe
+                                        color: isToPay
                                             ? AppColors.accentRed
                                             : AppColors.accentGreen,
                                         fontSize: 16,

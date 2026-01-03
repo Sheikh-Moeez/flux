@@ -120,8 +120,22 @@ class AuthService with ChangeNotifier {
     }
   }
 
+  bool _isMpinVerified = false;
+  bool get isMpinVerified => _isMpinVerified;
+
+  void verifyMpin() {
+    _isMpinVerified = true;
+    notifyListeners();
+  }
+
+  void revokeMpin() {
+    _isMpinVerified = false;
+    notifyListeners();
+  }
+
   // Sign Out
   Future<void> signOut() async {
+    _isMpinVerified = false;
     await GoogleSignIn(
       scopes: ['email'],
     ).signOut(); // Ensure Google is also signed out

@@ -49,7 +49,9 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
                 controller: _titleController,
                 style: const TextStyle(color: Colors.white),
                 decoration: InputDecoration(
-                  hintText: 'Title (e.g. Lunch)',
+                  hintText: isExpense
+                      ? 'Title (e.g. Lunch)'
+                      : 'Title (e.g. Salary)',
                   hintStyle: TextStyle(
                     color: Colors.white.withValues(alpha: 0.5),
                   ),
@@ -132,7 +134,7 @@ class AddDebtSheet extends StatefulWidget {
 class _AddDebtSheetState extends State<AddDebtSheet> {
   final _nameController = TextEditingController();
   final _amountController = TextEditingController();
-  String _type = 'I_OWE';
+  String _type = 'To Pay';
 
   @override
   Widget build(BuildContext context) {
@@ -197,18 +199,18 @@ class _AddDebtSheetState extends State<AddDebtSheet> {
                 children: [
                   Expanded(
                     child: GestureDetector(
-                      onTap: () => setState(() => _type = 'I_OWE'),
+                      onTap: () => setState(() => _type = 'To Pay'),
                       child: Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: _type == 'I_OWE'
+                          color: _type == 'To Pay'
                               ? AppColors.accentRed.withValues(alpha: 0.5)
                               : Colors.white10,
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: const Center(
                           child: Text(
-                            "I Owe",
+                            "To Pay",
                             style: TextStyle(color: Colors.white),
                           ),
                         ),
@@ -218,18 +220,18 @@ class _AddDebtSheetState extends State<AddDebtSheet> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: GestureDetector(
-                      onTap: () => setState(() => _type = 'THEY_OWE'),
+                      onTap: () => setState(() => _type = 'To Collect'),
                       child: Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: _type == 'THEY_OWE'
+                          color: _type == 'To Collect'
                               ? AppColors.accentGreen.withValues(alpha: 0.5)
                               : Colors.white10,
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: const Center(
                           child: Text(
-                            "They Owe Me",
+                            "To Collect",
                             style: TextStyle(color: Colors.white),
                           ),
                         ),

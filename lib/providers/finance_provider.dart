@@ -4,12 +4,13 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../core/models/models.dart';
 import 'package:csv/csv.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:share_plus/share_plus.dart';
+
 import 'dart:io';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 import 'dart:async';
+import '../core/services/encryption_service.dart';
 
 class FinanceProvider with ChangeNotifier {
   List<TransactionItem> _transactions = [];
@@ -48,7 +49,7 @@ class FinanceProvider with ChangeNotifier {
     double theyOwe = 0;
     for (var d in _debts) {
       if (!d.isSettled) {
-        if (d.type == 'I_OWE') {
+        if (d.type == 'I_OWE' || d.type == 'To Pay') {
           iOwe += d.amount;
         } else {
           theyOwe += d.amount;
@@ -60,6 +61,7 @@ class FinanceProvider with ChangeNotifier {
 
   Future<void> loadData() async {
     await _initNotifications();
+    await EncryptionService.instance.init();
 
     // Listen to auth changes to update streams automatically
     _authSubscription?.cancel();
@@ -82,42 +84,51 @@ class FinanceProvider with ChangeNotifier {
 
     // Transactions Stream
     _txnSubscription?.cancel();
-    _txnSubscription = userDoc
-        .collection('transactions')
-        .orderBy('date', descending: true)
-        .snapshots()
-        .listen((snapshot) {
-          _transactions = snapshot.docs
-              .map((doc) => TransactionItem.fromMap(doc.data(), doc.id))
-              .toList();
-          notifyListeners();
-        });
+    _txnSubscription = userDoc.collection('transactions').snapshots().listen((
+      snapshot,
+    ) {
+      final List<TransactionItem> loaded = [];
+      for (var doc in snapshot.docs) {
+        final data = EncryptionService.instance.decryptData(doc.data());
+        loaded.add(TransactionItem.fromMap(data, doc.id));
+      }
+      // Sort locally: Date Descending
+      loaded.sort((a, b) => b.date.compareTo(a.date));
+      _transactions = loaded;
+      notifyListeners();
+    });
 
     // Debts Stream
     _debtSubscription?.cancel();
-    _debtSubscription = userDoc
-        .collection('debts')
-        .orderBy('due_date')
-        .snapshots()
-        .listen((snapshot) {
-          _debts = snapshot.docs
-              .map((doc) => Debt.fromMap(doc.data(), doc.id))
-              .toList();
-          notifyListeners();
-        });
+    _debtSubscription = userDoc.collection('debts').snapshots().listen((
+      snapshot,
+    ) {
+      final List<Debt> loaded = [];
+      for (var doc in snapshot.docs) {
+        final data = EncryptionService.instance.decryptData(doc.data());
+        loaded.add(Debt.fromMap(data, doc.id));
+      }
+      // Sort locally: Due Date Ascending
+      loaded.sort((a, b) => a.dueDate.compareTo(b.dueDate));
+      _debts = loaded;
+      notifyListeners();
+    });
 
     // Reminders Stream
     _reminderSubscription?.cancel();
-    _reminderSubscription = userDoc
-        .collection('reminders')
-        .orderBy('due_date')
-        .snapshots()
-        .listen((snapshot) {
-          _reminders = snapshot.docs
-              .map((doc) => Reminder.fromMap(doc.data(), doc.id))
-              .toList();
-          notifyListeners();
-        });
+    _reminderSubscription = userDoc.collection('reminders').snapshots().listen((
+      snapshot,
+    ) {
+      final List<Reminder> loaded = [];
+      for (var doc in snapshot.docs) {
+        final data = EncryptionService.instance.decryptData(doc.data());
+        loaded.add(Reminder.fromMap(data, doc.id));
+      }
+      // Sort locally: Due Date Ascending
+      loaded.sort((a, b) => a.dueDate.compareTo(b.dueDate));
+      _reminders = loaded;
+      notifyListeners();
+    });
   }
 
   @override
@@ -145,11 +156,14 @@ class FinanceProvider with ChangeNotifier {
     }
 
     try {
+      final encryptedData = EncryptionService.instance.encryptData(
+        item.toMap(),
+      );
       await _firestore
           .collection('users')
           .doc(user.uid)
           .collection('transactions')
-          .add(item.toMap());
+          .add(encryptedData);
     } catch (e) {
       rethrow;
     }
@@ -171,27 +185,33 @@ class FinanceProvider with ChangeNotifier {
     final user = _auth.currentUser;
     if (user == null) return;
 
+    final encryptedData = EncryptionService.instance.encryptData(debt.toMap());
     await _firestore
         .collection('users')
         .doc(user.uid)
         .collection('debts')
-        .add(debt.toMap());
+        .add(encryptedData);
   }
 
   Future<void> settleDebt(Debt debt) async {
     final user = _auth.currentUser;
     if (user == null || debt.id == null) return;
 
-    // 1. Mark debt as settled in Firestore
+    // 1. Mark debt as settled in Firestore (Full Update for Encryption)
+    final updatedData = debt.toMap();
+    updatedData['is_settled'] = true;
+
+    final encryptedData = EncryptionService.instance.encryptData(updatedData);
+
     await _firestore
         .collection('users')
         .doc(user.uid)
         .collection('debts')
         .doc(debt.id)
-        .update({'is_settled': true});
+        .set(encryptedData);
 
     // 2. Add transaction to ledger
-    final isExpense = debt.type == 'I_OWE';
+    final isExpense = debt.type == 'I_OWE' || debt.type == 'To Pay';
     final transaction = TransactionItem(
       title: 'Debt Settled: ${debt.personName}',
       amount: debt.amount,
@@ -206,11 +226,14 @@ class FinanceProvider with ChangeNotifier {
     final user = _auth.currentUser;
     if (user == null) return;
 
+    final encryptedData = EncryptionService.instance.encryptData(
+      reminder.toMap(),
+    );
     await _firestore
         .collection('users')
         .doc(user.uid)
         .collection('reminders')
-        .add(reminder.toMap());
+        .add(encryptedData);
 
     // Schedule notification
     final scheduledDate = reminder.dueDate.subtract(const Duration(hours: 24));
@@ -266,7 +289,7 @@ class FinanceProvider with ChangeNotifier {
     await deleteReminder(reminder.id!);
   }
 
-  Future<void> exportToCsv() async {
+  Future<String> exportToCsv() async {
     final List<List<dynamic>> rows = [];
     rows.add(["Title", "Amount", "Type", "Date", "Category"]);
 
@@ -281,15 +304,28 @@ class FinanceProvider with ChangeNotifier {
     }
 
     String csvData = const ListToCsvConverter().convert(rows);
-    final directory = await getApplicationDocumentsDirectory();
+
+    Directory? directory;
+    if (Platform.isAndroid) {
+      directory = Directory('/storage/emulated/0/Download');
+      // Fallback or verify exists?
+      if (!await directory.exists()) {
+        directory = await getExternalStorageDirectory();
+      }
+    } else {
+      directory = await getApplicationDocumentsDirectory();
+      // iOS/Desktop approach - usually share is preferred but user insisted on download.
+      // On iOS, this file is hard to get without Share. But I will follow instructions for Android mainly.
+    }
+
+    // Safest fallback
+    directory ??= await getApplicationDocumentsDirectory();
+
     final path =
-        "${directory.path}/finance_export_${DateTime.now().millisecondsSinceEpoch}.csv";
+        "${directory.path}/flux_export_${DateTime.now().millisecondsSinceEpoch}.csv";
     final file = File(path);
     await file.writeAsString(csvData);
 
-    // ignore: deprecated_member_use
-    await Share.shareXFiles([
-      XFile(path),
-    ], text: 'Here is your transaction history.');
+    return path;
   }
 }
