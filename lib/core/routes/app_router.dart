@@ -1,6 +1,7 @@
 // import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 // import 'package:provider/provider.dart';
+import '../../screens/bills_screen.dart';
 import '../../screens/auth/login_screen.dart';
 import '../../screens/auth/signup_screen.dart';
 import '../../screens/main_scaffold.dart';
@@ -41,6 +42,13 @@ class AppRouter {
                 path: '/',
                 name: 'home',
                 builder: (context, state) => const HomeScreen(),
+                routes: [
+                  GoRoute(
+                    path: 'bills',
+                    name: 'bills',
+                    builder: (context, state) => const BillsScreen(),
+                  ),
+                ],
               ),
             ],
           ),

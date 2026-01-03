@@ -19,6 +19,7 @@ class FinanceProvider with ChangeNotifier {
   StreamSubscription? _txnSubscription;
   StreamSubscription? _debtSubscription;
   StreamSubscription? _reminderSubscription;
+  StreamSubscription? _authSubscription;
 
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -59,7 +60,12 @@ class FinanceProvider with ChangeNotifier {
 
   Future<void> loadData() async {
     await _initNotifications();
-    _subscribeToStreams();
+
+    // Listen to auth changes to update streams automatically
+    _authSubscription?.cancel();
+    _authSubscription = _auth.authStateChanges().listen((user) {
+      _subscribeToStreams();
+    });
   }
 
   void _subscribeToStreams() {
@@ -119,6 +125,7 @@ class FinanceProvider with ChangeNotifier {
     _txnSubscription?.cancel();
     _debtSubscription?.cancel();
     _reminderSubscription?.cancel();
+    _authSubscription?.cancel();
     super.dispose();
   }
 
@@ -227,6 +234,36 @@ class FinanceProvider with ChangeNotifier {
         //     UILocalNotificationDateInterpretation.absoluteTime,
       );
     }
+  }
+
+  Future<void> deleteReminder(String id) async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+
+    await _firestore
+        .collection('users')
+        .doc(user.uid)
+        .collection('reminders')
+        .doc(id)
+        .delete();
+  }
+
+  Future<void> payBill(Reminder reminder) async {
+    final user = _auth.currentUser;
+    if (user == null || reminder.id == null) return;
+
+    // 1. Add Expense Transaction
+    final transaction = TransactionItem(
+      title: 'Bill Payment: ${reminder.title}',
+      amount: reminder.amount,
+      isExpense: true,
+      date: DateTime.now(),
+      category: 'Bills',
+    );
+    await addTransaction(transaction);
+
+    // 2. Delete the Reminder
+    await deleteReminder(reminder.id!);
   }
 
   Future<void> exportToCsv() async {

@@ -23,14 +23,15 @@ class HomeScreen extends StatelessWidget {
           Positioned(
             top: -100,
             right: -100,
-            child: Container(
-              width: 300,
-              height: 300,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: AppColors.accentGreen.withValues(alpha: 0.1),
-              ),
-            ).animate().blur(
+            child:
+                Container(
+                  width: 300,
+                  height: 300,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: AppColors.accentGreen.withValues(alpha: 0.1),
+                  ),
+                ).animate().blur(
                   begin: const Offset(50, 50),
                   end: const Offset(50, 50),
                 ),
@@ -145,8 +146,9 @@ class HomeScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  NumberFormat.simpleCurrency(name: 'PKR')
-                      .format(provider.currentBalance),
+                  NumberFormat.simpleCurrency(
+                    name: 'PKR',
+                  ).format(provider.currentBalance),
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 36,
@@ -162,16 +164,14 @@ class HomeScreen extends StatelessWidget {
                       provider,
                       false,
                       AppColors.accentGreen,
-                      PhosphorIcons.arrowUpRight(
-                          PhosphorIconsStyle.bold),
+                      PhosphorIcons.arrowUpRight(PhosphorIconsStyle.bold),
                     ),
                     _incomeExpense(
                       'Expense',
                       provider,
                       true,
                       AppColors.accentRed,
-                      PhosphorIcons.arrowDownRight(
-                          PhosphorIconsStyle.bold),
+                      PhosphorIcons.arrowDownRight(PhosphorIconsStyle.bold),
                     ),
                   ],
                 ),
@@ -208,9 +208,10 @@ class HomeScreen extends StatelessWidget {
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(label,
-                style:
-                    TextStyle(color: Colors.white.withValues(alpha: 0.6))),
+            Text(
+              label,
+              style: TextStyle(color: Colors.white.withValues(alpha: 0.6)),
+            ),
             Text(
               NumberFormat.simpleCurrency(name: 'PKR').format(amount),
               style: const TextStyle(
@@ -232,58 +233,72 @@ class HomeScreen extends StatelessWidget {
         return Row(
           children: [
             Expanded(
-              child: GlassCard(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Icon(PhosphorIcons.users(
-                          PhosphorIconsStyle.duotone),
-                          color: Colors.orange),
-                      const SizedBox(height: 12),
-                      const Text('Net Debt',
-                          style: TextStyle(color: Colors.white54)),
-                      Text(
-                        NumberFormat.simpleCurrency(name: 'PKR')
-                            .format(provider.netDebt),
-                        style: TextStyle(
-                          color: provider.netDebt >= 0
-                              ? AppColors.accentGreen
-                              : AppColors.accentRed,
-                          fontWeight: FontWeight.bold,
+              child: GestureDetector(
+                onTap: () => context.goNamed('debt'),
+                child: GlassCard(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(
+                          PhosphorIcons.users(PhosphorIconsStyle.duotone),
+                          color: Colors.orange,
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 12),
+                        const Text(
+                          'Net Debt',
+                          style: TextStyle(color: Colors.white54),
+                        ),
+                        Text(
+                          NumberFormat.simpleCurrency(
+                            name: 'PKR',
+                          ).format(provider.netDebt),
+                          style: TextStyle(
+                            color: provider.netDebt >= 0
+                                ? AppColors.accentGreen
+                                : AppColors.accentRed,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
             ),
             const SizedBox(width: 16),
             Expanded(
-              child: GlassCard(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Icon(PhosphorIcons.lightning(
-                          PhosphorIconsStyle.duotone),
-                          color: Colors.yellow),
-                      const SizedBox(height: 12),
-                      const Text('Next Bill',
-                          style: TextStyle(color: Colors.white54)),
-                      Text(
-                        provider.reminders.isNotEmpty
-                            ? provider.reminders.first.title
-                            : 'No Bills Due',
-                        style: const TextStyle(
+              child: GestureDetector(
+                onTap: () => context.goNamed('bills'),
+                child: GlassCard(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(
+                          PhosphorIcons.lightning(PhosphorIconsStyle.duotone),
+                          color: Colors.yellow,
+                        ),
+                        const SizedBox(height: 12),
+                        const Text(
+                          'Next Bill',
+                          style: TextStyle(color: Colors.white54),
+                        ),
+                        Text(
+                          provider.reminders.isNotEmpty
+                              ? provider.reminders.first.title
+                              : 'No Bills Due',
+                          style: const TextStyle(
                             color: Colors.white,
-                            fontWeight: FontWeight.bold),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
+                            fontWeight: FontWeight.bold,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -305,8 +320,7 @@ class HomeScreen extends StatelessWidget {
             child: Center(
               child: Text(
                 'No transactions yet.',
-                style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.5)),
+                style: TextStyle(color: Colors.white.withValues(alpha: 0.5)),
               ),
             ),
           );
@@ -322,16 +336,18 @@ class HomeScreen extends StatelessWidget {
               padding: const EdgeInsets.only(bottom: 12),
               child: GlassCard(
                 child: ListTile(
-                  title: Text(t.title,
-                      style: const TextStyle(color: Colors.white)),
+                  title: Text(
+                    t.title,
+                    style: const TextStyle(color: Colors.white),
+                  ),
                   subtitle: Text(
                     DateFormat('MMM d, yyyy').format(t.date),
                     style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.5)),
+                      color: Colors.white.withValues(alpha: 0.5),
+                    ),
                   ),
                   trailing: Text(
-                    NumberFormat.simpleCurrency(name: 'PKR')
-                        .format(t.amount),
+                    NumberFormat.simpleCurrency(name: 'PKR').format(t.amount),
                     style: TextStyle(
                       color: t.isExpense
                           ? AppColors.accentRed

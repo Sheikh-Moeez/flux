@@ -10,4 +10,6 @@ class AppColors {
   static const Color glassBorder = Color(
     0x1AFFFFFF,
   ); // White with 0.1 opacity for borders
+
+  static const Color cardBackground = Color(0xFF1E1E1E);
 }
