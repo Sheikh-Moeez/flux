@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:intl/intl.dart';
+import 'package:go_router/go_router.dart';
+
 import '../core/constants/colors.dart';
 import '../providers/finance_provider.dart';
 import '../core/widgets/glass_card.dart';
@@ -17,56 +19,60 @@ class HomeScreen extends StatelessWidget {
       color: AppColors.background,
       child: Stack(
         children: [
-          // Background Elements (optional gradients can go here)
+          // Background glow
           Positioned(
             top: -100,
             right: -100,
-            child:
-                Container(
-                  width: 300,
-                  height: 300,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: AppColors.accentGreen.withValues(alpha: 0.1),
-                    backgroundBlendMode: BlendMode.screen,
-                  ),
-                ).animate().blur(
+            child: Container(
+              width: 300,
+              height: 300,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppColors.accentGreen.withValues(alpha: 0.1),
+              ),
+            ).animate().blur(
                   begin: const Offset(50, 50),
                   end: const Offset(50, 50),
                 ),
           ),
 
           SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 20),
-                  _buildHeader(),
-                  const SizedBox(height: 24),
-                  _buildHeroCard(context),
-                  const SizedBox(height: 24),
-                  _buildStatsRow(context),
-                  const SizedBox(height: 32),
-                  Text(
-                    'Recent Transactions',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      shadows: [
-                        Shadow(
-                          color: Colors.black.withValues(alpha: 0.3),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
+            child: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 20),
+                    _buildHeader(context),
+                    const SizedBox(height: 24),
+                    _buildHeroCard(context),
+                    const SizedBox(height: 24),
+                    _buildStatsRow(context),
+                    const SizedBox(height: 32),
+
+                    Text(
+                      'Recent Transactions',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        shadows: [
+                          Shadow(
+                            color: Colors.black.withValues(alpha: 0.3),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  Expanded(child: _buildTransactionList(context)),
-                ],
+                    const SizedBox(height: 16),
+
+                    _buildTransactionList(context),
+                    const SizedBox(height: 40),
+                  ],
+                ),
               ),
             ),
           ),
@@ -75,7 +81,9 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader() {
+  // ================= HEADER =================
+
+  Widget _buildHeader(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -91,9 +99,8 @@ class HomeScreen extends StatelessWidget {
             ),
             Consumer<AuthService>(
               builder: (context, auth, _) {
-                final user = auth.currentUser;
                 return Text(
-                  user?.displayName ?? 'User',
+                  auth.currentUser?.displayName ?? 'User',
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 24,
@@ -104,20 +111,27 @@ class HomeScreen extends StatelessWidget {
             ),
           ],
         ),
-        CircleAvatar(
-          backgroundColor: Colors.white.withValues(alpha: 0.1),
-          child: const Icon(Icons.person, color: Colors.white),
+        InkWell(
+          borderRadius: BorderRadius.circular(50),
+          onTap: () {
+            context.goNamed('profile');
+          },
+          child: CircleAvatar(
+            backgroundColor: Colors.white.withValues(alpha: 0.1),
+            child: const Icon(Icons.person, color: Colors.white),
+          ),
         ),
       ],
     );
   }
 
+  // ================= HERO CARD =================
+
   Widget _buildHeroCard(BuildContext context) {
     return Consumer<FinanceProvider>(
-      builder: (context, provider, child) {
+      builder: (context, provider, _) {
         return GlassCard(
-          child: Container(
-            width: double.infinity,
+          child: Padding(
             padding: const EdgeInsets.all(24),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -131,38 +145,33 @@ class HomeScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  NumberFormat.simpleCurrency(
-                    name: 'PKR',
-                  ).format(provider.currentBalance),
+                  NumberFormat.simpleCurrency(name: 'PKR')
+                      .format(provider.currentBalance),
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 36,
                     fontWeight: FontWeight.bold,
                   ),
-                ).animate().shimmer(duration: 1500.ms, color: Colors.white54),
+                ).animate().shimmer(duration: 1500.ms),
                 const SizedBox(height: 24),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    _buildIncomeExpenseInfo(
+                    _incomeExpense(
                       'Income',
-                      NumberFormat.simpleCurrency(name: 'PKR').format(
-                        provider.transactions
-                            .where((t) => !t.isExpense)
-                            .fold(0.0, (sum, t) => sum + t.amount),
-                      ),
-                      PhosphorIcons.arrowUpRight(PhosphorIconsStyle.bold),
+                      provider,
+                      false,
                       AppColors.accentGreen,
+                      PhosphorIcons.arrowUpRight(
+                          PhosphorIconsStyle.bold),
                     ),
-                    _buildIncomeExpenseInfo(
+                    _incomeExpense(
                       'Expense',
-                      NumberFormat.simpleCurrency(name: 'PKR').format(
-                        provider.transactions
-                            .where((t) => t.isExpense)
-                            .fold(0.0, (sum, t) => sum + t.amount),
-                      ),
-                      PhosphorIcons.arrowDownRight(PhosphorIconsStyle.bold),
+                      provider,
+                      true,
                       AppColors.accentRed,
+                      PhosphorIcons.arrowDownRight(
+                          PhosphorIconsStyle.bold),
                     ),
                   ],
                 ),
@@ -174,12 +183,17 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildIncomeExpenseInfo(
+  Widget _incomeExpense(
     String label,
-    String amount,
-    IconData icon,
+    FinanceProvider provider,
+    bool isExpense,
     Color color,
+    IconData icon,
   ) {
+    final amount = provider.transactions
+        .where((t) => t.isExpense == isExpense)
+        .fold(0.0, (sum, t) => sum + t.amount);
+
     return Row(
       children: [
         Container(
@@ -194,18 +208,13 @@ class HomeScreen extends StatelessWidget {
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Text(label,
+                style:
+                    TextStyle(color: Colors.white.withValues(alpha: 0.6))),
             Text(
-              label,
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.6),
-                fontSize: 12,
-              ),
-            ),
-            Text(
-              amount,
+              NumberFormat.simpleCurrency(name: 'PKR').format(amount),
               style: const TextStyle(
                 color: Colors.white,
-                fontSize: 16,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -215,9 +224,11 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
+  // ================= STATS =================
+
   Widget _buildStatsRow(BuildContext context) {
     return Consumer<FinanceProvider>(
-      builder: (context, provider, child) {
+      builder: (context, provider, _) {
         return Row(
           children: [
             Expanded(
@@ -227,26 +238,19 @@ class HomeScreen extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(
-                        PhosphorIcons.users(PhosphorIconsStyle.duotone),
-                        color: Colors.orange,
-                        size: 28,
-                      ),
+                      Icon(PhosphorIcons.users(
+                          PhosphorIconsStyle.duotone),
+                          color: Colors.orange),
                       const SizedBox(height: 12),
-                      const Text(
-                        'Net Debt',
-                        style: TextStyle(color: Colors.white54),
-                      ),
-                      const SizedBox(height: 4),
+                      const Text('Net Debt',
+                          style: TextStyle(color: Colors.white54)),
                       Text(
-                        NumberFormat.simpleCurrency(
-                          name: 'PKR',
-                        ).format(provider.netDebt),
+                        NumberFormat.simpleCurrency(name: 'PKR')
+                            .format(provider.netDebt),
                         style: TextStyle(
                           color: provider.netDebt >= 0
                               ? AppColors.accentGreen
                               : AppColors.accentRed,
-                          fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -263,26 +267,19 @@ class HomeScreen extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(
-                        PhosphorIcons.lightning(PhosphorIconsStyle.duotone),
-                        color: Colors.yellow,
-                        size: 28,
-                      ),
+                      Icon(PhosphorIcons.lightning(
+                          PhosphorIconsStyle.duotone),
+                          color: Colors.yellow),
                       const SizedBox(height: 12),
-                      const Text(
-                        'Next Bill',
-                        style: TextStyle(color: Colors.white54),
-                      ),
-                      const SizedBox(height: 4),
+                      const Text('Next Bill',
+                          style: TextStyle(color: Colors.white54)),
                       Text(
                         provider.reminders.isNotEmpty
-                            ? "${provider.reminders.first.title} (${DateFormat('MMM d').format(provider.reminders.first.dueDate)})"
-                            : "No Bills Due",
+                            ? provider.reminders.first.title
+                            : 'No Bills Due',
                         style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                        ),
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -297,73 +294,49 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
+  // ================= TRANSACTIONS =================
+
   Widget _buildTransactionList(BuildContext context) {
     return Consumer<FinanceProvider>(
-      builder: (context, provider, child) {
+      builder: (context, provider, _) {
         if (provider.transactions.isEmpty) {
-          return Center(
-            child: Text(
-              "No transactions yet.",
-              style: TextStyle(color: Colors.white.withValues(alpha: 0.5)),
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 40),
+            child: Center(
+              child: Text(
+                'No transactions yet.',
+                style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.5)),
+              ),
             ),
           );
         }
-        // Show only recent 5
-        final recent = provider.transactions.take(10).toList();
 
         return ListView.builder(
-          physics: const BouncingScrollPhysics(),
-          itemCount: recent.length,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: provider.transactions.length,
           itemBuilder: (context, index) {
-            final transaction = recent[index];
+            final t = provider.transactions[index];
             return Padding(
-              padding: const EdgeInsets.only(bottom: 12.0),
+              padding: const EdgeInsets.only(bottom: 12),
               child: GlassCard(
-                borderRadius: BorderRadius.circular(16),
                 child: ListTile(
-                  leading: Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: transaction.isExpense
-                          ? AppColors.accentRed.withValues(alpha: 0.1)
-                          : AppColors.accentGreen.withValues(alpha: 0.1),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      transaction.isExpense
-                          ? PhosphorIcons.arrowDownRight(
-                              PhosphorIconsStyle.bold,
-                            )
-                          : PhosphorIcons.arrowUpRight(PhosphorIconsStyle.bold),
-                      color: transaction.isExpense
-                          ? AppColors.accentRed
-                          : AppColors.accentGreen,
-                      size: 20,
-                    ),
-                  ),
-                  title: Text(
-                    transaction.title,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+                  title: Text(t.title,
+                      style: const TextStyle(color: Colors.white)),
                   subtitle: Text(
-                    DateFormat('MMM d, yyyy').format(transaction.date),
+                    DateFormat('MMM d, yyyy').format(t.date),
                     style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.5),
-                    ),
+                        color: Colors.white.withValues(alpha: 0.5)),
                   ),
                   trailing: Text(
-                    NumberFormat.simpleCurrency(
-                      name: 'PKR',
-                    ).format(transaction.amount),
+                    NumberFormat.simpleCurrency(name: 'PKR')
+                        .format(t.amount),
                     style: TextStyle(
-                      color: transaction.isExpense
+                      color: t.isExpense
                           ? AppColors.accentRed
                           : AppColors.accentGreen,
                       fontWeight: FontWeight.bold,
-                      fontSize: 16,
                     ),
                   ),
                 ),

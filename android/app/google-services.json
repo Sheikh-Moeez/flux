@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "374792890536-6uvsppm39m6mqebgeib0k24nja93pjvb.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.flux",
+            "certificate_hash": "97dae56db770f2634966ee7d5a708ca0a1598282"
+          }
+        },
+        {
           "client_id": "374792890536-tl4jiva38n24mqp3rvbfkesbqv7jun92.apps.googleusercontent.com",
           "client_type": 3
         }

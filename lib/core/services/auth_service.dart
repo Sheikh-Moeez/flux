@@ -1,10 +1,17 @@
+import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
-class AuthService {
+class AuthService with ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  AuthService() {
+    _auth.authStateChanges().listen((user) {
+      notifyListeners();
+    });
+  }
 
   // Auth State Changes Stream
   Stream<User?> get authStateChanges => _auth.authStateChanges();
@@ -77,7 +84,7 @@ class AuthService {
   // Google Sign In
   Future<User?> signInWithGoogle() async {
     try {
-      final GoogleSignIn googleSignIn = GoogleSignIn();
+      final GoogleSignIn googleSignIn = GoogleSignIn(scopes: ['email']);
       final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
 
       if (googleUser == null) return null; // User canceled
@@ -115,7 +122,9 @@ class AuthService {
 
   // Sign Out
   Future<void> signOut() async {
-    await GoogleSignIn().signOut(); // Ensure Google is also signed out
+    await GoogleSignIn(
+      scopes: ['email'],
+    ).signOut(); // Ensure Google is also signed out
     await _auth.signOut();
   }
 }

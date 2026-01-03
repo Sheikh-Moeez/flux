@@ -59,4 +59,5 @@ class DefaultFirebaseOptions {
     projectId: 'flux-2b640',
     storageBucket: 'flux-2b640.firebasestorage.app',
   );
+
 }

@@ -10,6 +10,7 @@ plugins {
 
 android {
     namespace = "com.example.flux"
+    namespace = "com.example.flux"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 

@@ -3,37 +3,39 @@ import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../core/constants/colors.dart';
-import 'home_screen.dart';
-import 'stats_screen.dart';
+// import 'home_screen.dart';
+// import 'stats_screen.dart';
 import '../core/widgets/glass_card.dart';
 import 'sheets.dart';
-import 'debt_screen.dart';
-import 'settings_screen.dart';
+// import 'debt_screen.dart';
+// import 'profile_screen.dart';
 
-class MainScaffold extends StatefulWidget {
-  const MainScaffold({super.key});
+import 'package:go_router/go_router.dart';
 
-  @override
-  State<MainScaffold> createState() => _MainScaffoldState();
-}
+class MainScaffold extends StatelessWidget {
+  final StatefulNavigationShell navigationShell;
 
-class _MainScaffoldState extends State<MainScaffold> {
-  int _currentIndex = 0;
-
-  // Pages
-  final List<Widget> _pages = [
-    const HomeScreen(),
-    const StatsScreen(),
-    const SizedBox(), // Placeholder for center FAB
-    const DebtScreen(),
-    const SettingsScreen(),
-  ];
+  const MainScaffold({super.key, required this.navigationShell});
 
   void _onItemTapped(int index) {
-    if (index == 2) return; // Middle button handled separately
-    setState(() {
-      _currentIndex = index;
-    });
+    // Map the UI index (0 to 4) to router branch index (0 to 3)
+    // 0 -> 0 (Home)
+    // 1 -> 1 (Stats)
+    // 2 (FAB) -> No mapped branch
+    // 3 -> 2 (Debt)
+    // 4 -> 3 (Profile)
+
+    if (index == 2) return; // FAB
+
+    int branchIndex = index;
+    if (index > 2) {
+      branchIndex = index - 1;
+    }
+
+    navigationShell.goBranch(
+      branchIndex,
+      initialLocation: branchIndex == navigationShell.currentIndex,
+    );
   }
 
   @override
@@ -57,73 +59,73 @@ class _MainScaffoldState extends State<MainScaffold> {
             ).animate().blur(end: const Offset(50, 50)),
           ),
 
-          IndexedStack(index: _currentIndex, children: _pages),
-
-          // Custom Bottom Navigation
-          Positioned(
-            bottom: 30,
-            left: 20,
-            right: 20,
-            child: _buildFloatingDock(context),
-          ).animate().fadeIn(duration: 600.ms).slideY(begin: 1.0, end: 0.0),
+          navigationShell,
         ],
       ),
+      bottomNavigationBar: _buildBottomBar(context),
     );
   }
 
-  Widget _buildFloatingDock(BuildContext context) {
+  Widget _buildBottomBar(BuildContext context) {
     return ClipRRect(
-      borderRadius: BorderRadius.circular(30),
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
         child: Container(
           decoration: BoxDecoration(
             color: AppColors.glassWhite,
-            borderRadius: BorderRadius.circular(30),
-            border: Border.all(color: AppColors.glassBorder),
+            border: const Border(top: BorderSide(color: AppColors.glassBorder)),
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _buildNavItem(
-                0,
-                PhosphorIcons.house(PhosphorIconsStyle.fill),
-                PhosphorIcons.house(PhosphorIconsStyle.regular),
-              ),
-              _buildNavItem(
-                1,
-                PhosphorIcons.chartBar(PhosphorIconsStyle.fill),
-                PhosphorIcons.chartBar(PhosphorIconsStyle.regular),
-              ),
+          padding: const EdgeInsets.only(
+            left: 20,
+            right: 20,
+            top: 12,
+            bottom:
+                24, // Extra padding for safe area implications usually handled by SafeArea but we can add some consistent padding
+          ),
+          child: SafeArea(
+            top: false,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _buildNavItem(
+                  0,
+                  PhosphorIcons.house(PhosphorIconsStyle.fill),
+                  PhosphorIcons.house(PhosphorIconsStyle.regular),
+                ),
+                _buildNavItem(
+                  1,
+                  PhosphorIcons.chartBar(PhosphorIconsStyle.fill),
+                  PhosphorIcons.chartBar(PhosphorIconsStyle.regular),
+                ),
 
-              // Center FAB
-              FloatingActionButton(
-                onPressed: () {
-                  showModalBottomSheet(
-                    context: context,
-                    backgroundColor: Colors.transparent,
-                    builder: (context) => _buildAddMenu(context),
-                  );
-                },
-                mini: false,
-                backgroundColor: AppColors.accentGreen,
-                elevation: 0,
-                shape: const CircleBorder(),
-                child: const Icon(Icons.add, color: Colors.black),
-              ),
+                // Center FAB
+                FloatingActionButton(
+                  onPressed: () {
+                    showModalBottomSheet(
+                      context: context,
+                      backgroundColor: Colors.transparent,
+                      builder: (context) => _buildAddMenu(context),
+                    );
+                  },
+                  mini: false,
+                  backgroundColor: AppColors.accentGreen,
+                  elevation: 0,
+                  shape: const CircleBorder(),
+                  child: const Icon(Icons.add, color: Colors.black),
+                ),
 
-              _buildNavItem(
-                3,
-                PhosphorIcons.users(PhosphorIconsStyle.fill),
-                PhosphorIcons.users(PhosphorIconsStyle.regular),
-              ),
-              _buildNavItem(
-                4,
-                PhosphorIcons.gear(PhosphorIconsStyle.fill),
-                PhosphorIcons.gear(PhosphorIconsStyle.regular),
-              ),
-            ],
+                _buildNavItem(
+                  3,
+                  PhosphorIcons.users(PhosphorIconsStyle.fill),
+                  PhosphorIcons.users(PhosphorIconsStyle.regular),
+                ),
+                _buildNavItem(
+                  4,
+                  PhosphorIcons.user(PhosphorIconsStyle.fill),
+                  PhosphorIcons.user(PhosphorIconsStyle.regular),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -252,7 +254,19 @@ class _MainScaffoldState extends State<MainScaffold> {
   }
 
   Widget _buildNavItem(int index, IconData activeIcon, IconData inactiveIcon) {
-    final isSelected = _currentIndex == index;
+    // Map router index back to UI index
+    // 0 -> 0 (Home)
+    // 1 -> 1 (Stats)
+    // 2 -> 3 (Debt)
+    // 3 -> 4 (Profile)
+
+    int currentBranchIndex = navigationShell.currentIndex;
+    int currentUiIndex = currentBranchIndex;
+    if (currentBranchIndex >= 2) {
+      currentUiIndex = currentBranchIndex + 1;
+    }
+
+    final isSelected = currentUiIndex == index;
     return IconButton(
       icon: Icon(
         isSelected ? activeIcon : inactiveIcon,

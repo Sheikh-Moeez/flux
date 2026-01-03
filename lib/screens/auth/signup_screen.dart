@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
+import 'package:go_router/go_router.dart';
 import '../../core/constants/colors.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/widgets/glass_card.dart';
@@ -28,7 +29,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
         name: _nameController.text.trim(),
       );
       if (mounted) {
-        Navigator.pop(context); // Go back to login or let stream handle it
+        // Auth listener will handle redirection
       }
     } catch (e) {
       if (mounted) {
@@ -186,7 +187,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   const SizedBox(height: 24),
                   TextButton(
                     onPressed: () {
-                      Navigator.pop(context);
+                      context.go('/login');
                     },
                     child: RichText(
                       text: TextSpan(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../core/database/database_helper.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../core/models/models.dart';
 import 'package:csv/csv.dart';
 import 'package:path_provider/path_provider.dart';
@@ -8,11 +9,19 @@ import 'dart:io';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
+import 'dart:async';
 
 class FinanceProvider with ChangeNotifier {
   List<TransactionItem> _transactions = [];
   List<Debt> _debts = [];
   List<Reminder> _reminders = [];
+
+  StreamSubscription? _txnSubscription;
+  StreamSubscription? _debtSubscription;
+  StreamSubscription? _reminderSubscription;
+
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
   final FlutterLocalNotificationsPlugin _notificationsPlugin =
       FlutterLocalNotificationsPlugin();
 
@@ -50,15 +59,71 @@ class FinanceProvider with ChangeNotifier {
 
   Future<void> loadData() async {
     await _initNotifications();
-    _transactions = await DatabaseHelper.instance.readAllTransactions();
-    _debts = await DatabaseHelper.instance.readAllDebts();
-    _reminders = await DatabaseHelper.instance.readAllReminders();
-    notifyListeners();
+    _subscribeToStreams();
+  }
+
+  void _subscribeToStreams() {
+    final user = _auth.currentUser;
+    if (user == null) {
+      _transactions = [];
+      _debts = [];
+      _reminders = [];
+      notifyListeners();
+      return;
+    }
+
+    final userDoc = _firestore.collection('users').doc(user.uid);
+
+    // Transactions Stream
+    _txnSubscription?.cancel();
+    _txnSubscription = userDoc
+        .collection('transactions')
+        .orderBy('date', descending: true)
+        .snapshots()
+        .listen((snapshot) {
+          _transactions = snapshot.docs
+              .map((doc) => TransactionItem.fromMap(doc.data(), doc.id))
+              .toList();
+          notifyListeners();
+        });
+
+    // Debts Stream
+    _debtSubscription?.cancel();
+    _debtSubscription = userDoc
+        .collection('debts')
+        .orderBy('due_date')
+        .snapshots()
+        .listen((snapshot) {
+          _debts = snapshot.docs
+              .map((doc) => Debt.fromMap(doc.data(), doc.id))
+              .toList();
+          notifyListeners();
+        });
+
+    // Reminders Stream
+    _reminderSubscription?.cancel();
+    _reminderSubscription = userDoc
+        .collection('reminders')
+        .orderBy('due_date')
+        .snapshots()
+        .listen((snapshot) {
+          _reminders = snapshot.docs
+              .map((doc) => Reminder.fromMap(doc.data(), doc.id))
+              .toList();
+          notifyListeners();
+        });
+  }
+
+  @override
+  void dispose() {
+    _txnSubscription?.cancel();
+    _debtSubscription?.cancel();
+    _reminderSubscription?.cancel();
+    super.dispose();
   }
 
   Future<void> _initNotifications() async {
     tz.initializeTimeZones();
-    // Assuming default icon exists, otherwise we need to add one or use a different one
     const androidSettings = AndroidInitializationSettings(
       '@mipmap/ic_launcher',
     );
@@ -67,35 +132,58 @@ class FinanceProvider with ChangeNotifier {
   }
 
   Future<void> addTransaction(TransactionItem item) async {
-    await DatabaseHelper.instance.createTransaction(item);
-    await loadData();
+    final user = _auth.currentUser;
+    if (user == null) {
+      return;
+    }
+
+    try {
+      await _firestore
+          .collection('users')
+          .doc(user.uid)
+          .collection('transactions')
+          .add(item.toMap());
+    } catch (e) {
+      rethrow;
+    }
   }
 
-  Future<void> deleteTransaction(int id) async {
-    await DatabaseHelper.instance.deleteTransaction(id);
-    await loadData();
+  Future<void> deleteTransaction(String id) async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+
+    await _firestore
+        .collection('users')
+        .doc(user.uid)
+        .collection('transactions')
+        .doc(id)
+        .delete();
   }
 
   Future<void> addDebt(Debt debt) async {
-    await DatabaseHelper.instance.createDebt(debt);
-    await loadData();
+    final user = _auth.currentUser;
+    if (user == null) return;
+
+    await _firestore
+        .collection('users')
+        .doc(user.uid)
+        .collection('debts')
+        .add(debt.toMap());
   }
 
   Future<void> settleDebt(Debt debt) async {
-    // 1. Mark debt as settled
-    final updatedDebt = Debt(
-      id: debt.id,
-      personName: debt.personName,
-      amount: debt.amount,
-      type: debt.type,
-      dueDate: debt.dueDate,
-      isSettled: true,
-    );
-    await DatabaseHelper.instance.updateDebt(updatedDebt);
+    final user = _auth.currentUser;
+    if (user == null || debt.id == null) return;
+
+    // 1. Mark debt as settled in Firestore
+    await _firestore
+        .collection('users')
+        .doc(user.uid)
+        .collection('debts')
+        .doc(debt.id)
+        .update({'is_settled': true});
 
     // 2. Add transaction to ledger
-    // If THEY_OWE settled -> I got money (Income)
-    // If I_OWE settled -> I paid money (Expense)
     final isExpense = debt.type == 'I_OWE';
     final transaction = TransactionItem(
       title: 'Debt Settled: ${debt.personName}',
@@ -104,15 +192,20 @@ class FinanceProvider with ChangeNotifier {
       date: DateTime.now(),
       category: 'Debt Settlement',
     );
-    await DatabaseHelper.instance.createTransaction(transaction);
-
-    await loadData();
+    await addTransaction(transaction);
   }
 
   Future<void> addReminder(Reminder reminder) async {
-    await DatabaseHelper.instance.createReminder(reminder);
+    final user = _auth.currentUser;
+    if (user == null) return;
 
-    // Schedule notification 24 hours before due date
+    await _firestore
+        .collection('users')
+        .doc(user.uid)
+        .collection('reminders')
+        .add(reminder.toMap());
+
+    // Schedule notification
     final scheduledDate = reminder.dueDate.subtract(const Duration(hours: 24));
     if (scheduledDate.isAfter(DateTime.now())) {
       await _notificationsPlugin.zonedSchedule(
@@ -130,23 +223,18 @@ class FinanceProvider with ChangeNotifier {
           ),
         ),
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-
         // uiLocalNotificationDateInterpretation:
         //     UILocalNotificationDateInterpretation.absoluteTime,
       );
     }
-
-    await loadData();
   }
 
   Future<void> exportToCsv() async {
     final List<List<dynamic>> rows = [];
-    rows.add(["ID", "Title", "Amount", "Type", "Date", "Category"]);
+    rows.add(["Title", "Amount", "Type", "Date", "Category"]);
 
-    final transactions = await DatabaseHelper.instance.readAllTransactions();
-    for (var t in transactions) {
+    for (var t in _transactions) {
       rows.add([
-        t.id,
         t.title,
         t.amount,
         t.isExpense ? "Expense" : "Income",

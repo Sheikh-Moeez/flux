@@ -7,7 +7,7 @@ import 'firebase_options.dart';
 import 'core/constants/colors.dart';
 import 'core/services/auth_service.dart';
 import 'providers/finance_provider.dart';
-import 'screens/auth/auth_wrapper.dart';
+import 'core/routes/app_router.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -22,20 +22,26 @@ void main() async {
     ),
   );
 
-  runApp(const MyApp());
+  final authService = AuthService();
+  final appRouter = AppRouter(authService);
+
+  runApp(MyApp(authService: authService, appRouter: appRouter));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final AuthService authService;
+  final AppRouter appRouter;
+
+  const MyApp({super.key, required this.authService, required this.appRouter});
 
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        Provider<AuthService>(create: (_) => AuthService()),
+        ChangeNotifierProvider.value(value: authService),
         ChangeNotifierProvider(create: (_) => FinanceProvider()..loadData()),
       ],
-      child: MaterialApp(
+      child: MaterialApp.router(
         title: 'Flux Finance',
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
@@ -54,7 +60,7 @@ class MyApp extends StatelessWidget {
           ),
           useMaterial3: true,
         ),
-        home: const AuthWrapper(),
+        routerConfig: appRouter.router,
       ),
     );
   }

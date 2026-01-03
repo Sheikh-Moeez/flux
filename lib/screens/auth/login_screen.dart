@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
+import 'package:go_router/go_router.dart';
 import '../../core/constants/colors.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/widgets/glass_card.dart';
-import 'signup_screen.dart';
+// import 'signup_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -37,56 +38,6 @@ class _LoginScreenState extends State<LoginScreen> {
       if (mounted) setState(() => _isLoading = false);
     }
   }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-// ... content omitted ...
-                          SizedBox(
-                            width: double.infinity,
-                            child: OutlinedButton.icon(
-                              onPressed: _isLoading
-                                  ? null
-                                  : () async {
-                                      setState(() => _isLoading = true);
-                                      final authService = Provider.of<AuthService>(
-                                          context,
-                                          listen: false);
-                                      final messenger = ScaffoldMessenger.of(context);
-                                      try {
-                                        await authService.signInWithGoogle();
-                                      } catch (e) {
-                                        if (mounted) {
-                                            messenger.showSnackBar(
-                                            SnackBar(
-                                                content: Text(e.toString()),
-                                                backgroundColor: Colors.red),
-                                          );
-                                        }
-                                      } finally {
-                                        if (mounted) {
-                                          setState(() => _isLoading = false);
-                                        }
-                                      }
-                                    },
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: Colors.white,
-                                side: BorderSide(
-                                    color: Colors.white.withValues(alpha: 0.2)),
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 16),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-                              icon: const Icon(Icons.g_mobiledata, size: 28),
-                              label: const Text(
-                                "Sign in with Google",
-                                style: TextStyle(
-                                    fontSize: 16, fontWeight: FontWeight.bold),
-                              ),
-                            ),
-                          ),
 
   @override
   Widget build(BuildContext context) {
@@ -218,13 +169,14 @@ class _LoginScreenState extends State<LoginScreen> {
                                             context,
                                             listen: false,
                                           );
+                                      final messenger = ScaffoldMessenger.of(
+                                        context,
+                                      );
                                       try {
                                         await authService.signInWithGoogle();
                                       } catch (e) {
                                         if (mounted) {
-                                          ScaffoldMessenger.of(
-                                            context,
-                                          ).showSnackBar(
+                                          messenger.showSnackBar(
                                             SnackBar(
                                               content: Text(e.toString()),
                                               backgroundColor: Colors.red,
@@ -249,9 +201,14 @@ class _LoginScreenState extends State<LoginScreen> {
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                               ),
-                              icon: const Icon(Icons.g_mobiledata, size: 28),
+                              icon: Image.asset(
+                                'assets/google.png',
+                                height: 24,
+                                width: 24,
+                              ),
+
                               label: const Text(
-                                "Sign in with Google",
+                                "  Sign in with Google",
                                 style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
@@ -266,12 +223,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   const SizedBox(height: 24),
                   TextButton(
                     onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const SignUpScreen(),
-                        ),
-                      );
+                      context.go('/signup');
                     },
                     child: RichText(
                       text: TextSpan(

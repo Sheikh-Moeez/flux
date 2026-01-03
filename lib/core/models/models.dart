@@ -1,5 +1,5 @@
 class TransactionItem {
-  final int? id;
+  final String? id;
   final String title;
   final double amount;
   final bool isExpense;
@@ -17,29 +17,28 @@ class TransactionItem {
 
   Map<String, dynamic> toMap() {
     return {
-      'id': id,
       'title': title,
       'amount': amount,
-      'is_expense': isExpense ? 1 : 0,
+      'is_expense': isExpense,
       'date': date.toIso8601String(),
       'category': category,
     };
   }
 
-  factory TransactionItem.fromMap(Map<String, dynamic> map) {
+  factory TransactionItem.fromMap(Map<String, dynamic> map, String id) {
     return TransactionItem(
-      id: map['id'],
-      title: map['title'],
-      amount: map['amount'],
-      isExpense: map['is_expense'] == 1,
-      date: DateTime.parse(map['date']),
-      category: map['category'],
+      id: id,
+      title: map['title'] ?? '',
+      amount: (map['amount'] as num?)?.toDouble() ?? 0.0,
+      isExpense: map['is_expense'] ?? false,
+      date: DateTime.tryParse(map['date'] ?? '') ?? DateTime.now(),
+      category: map['category'] ?? 'General',
     );
   }
 }
 
 class Debt {
-  final int? id;
+  final String? id;
   final String personName;
   final double amount;
   final String type; // "I_OWE" or "THEY_OWE"
@@ -57,29 +56,28 @@ class Debt {
 
   Map<String, dynamic> toMap() {
     return {
-      'id': id,
       'person_name': personName,
       'amount': amount,
       'type': type,
       'due_date': dueDate.toIso8601String(),
-      'is_settled': isSettled ? 1 : 0,
+      'is_settled': isSettled,
     };
   }
 
-  factory Debt.fromMap(Map<String, dynamic> map) {
+  factory Debt.fromMap(Map<String, dynamic> map, String id) {
     return Debt(
-      id: map['id'],
-      personName: map['person_name'],
-      amount: map['amount'],
-      type: map['type'],
-      dueDate: DateTime.parse(map['due_date']),
-      isSettled: map['is_settled'] == 1,
+      id: id,
+      personName: map['person_name'] ?? '',
+      amount: (map['amount'] as num?)?.toDouble() ?? 0.0,
+      type: map['type'] ?? 'I_OWE',
+      dueDate: DateTime.tryParse(map['due_date'] ?? '') ?? DateTime.now(),
+      isSettled: map['is_settled'] ?? false,
     );
   }
 }
 
 class Reminder {
-  final int? id;
+  final String? id;
   final String title;
   final double amount;
   final DateTime dueDate;
@@ -95,7 +93,6 @@ class Reminder {
 
   Map<String, dynamic> toMap() {
     return {
-      'id': id,
       'title': title,
       'amount': amount,
       'due_date': dueDate.toIso8601String(),
@@ -103,13 +100,13 @@ class Reminder {
     };
   }
 
-  factory Reminder.fromMap(Map<String, dynamic> map) {
+  factory Reminder.fromMap(Map<String, dynamic> map, String id) {
     return Reminder(
-      id: map['id'],
-      title: map['title'],
-      amount: map['amount'],
-      dueDate: DateTime.parse(map['due_date']),
-      notificationId: map['notification_id'],
+      id: id,
+      title: map['title'] ?? '',
+      amount: (map['amount'] as num?)?.toDouble() ?? 0.0,
+      dueDate: DateTime.tryParse(map['due_date'] ?? '') ?? DateTime.now(),
+      notificationId: map['notification_id'] ?? 0,
     );
   }
 }
