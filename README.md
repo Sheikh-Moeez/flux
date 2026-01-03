@@ -18,6 +18,11 @@
 *   **☁️ Cloud Sync**: Seamlessly sync your data across devices using **Firebase Firestore**.
 *   **🔐 Secure Authentication**: Sign in securely with Google or Email/Password via **Firebase Auth**.
 *   **📂 Data Export**: Export your transaction history to CSV for external analysis.
+*   **(New) 🔒 Zero Trust Security Platform**:
+    *   **Client-Side AES Encryption**: All financial data is encrypted locally using NIST-standard AES authentication before reaching the cloud.
+    *   **MPIN Protection**: Secure your session with a 6-digit MPIN.
+    *   **Biometric Unlock**: Seamlessly unlock the app using Fingerprint or Face ID.
+    *   **App Lock**: Instantly lock your session for privacy.
 *   **🎨 Modern UI**: Enjoy a sleek, dark-themed interface featuring glassmorphism and smooth animations.
 
 ## 🛠️ Tech Stack
@@ -36,6 +41,10 @@
 *   **Utilities**:
     *   [Flutter Local Notifications](https://pub.dev/packages/flutter_local_notifications)
     *   [CSV](https://pub.dev/packages/csv) & [Share Plus](https://pub.dev/packages/share_plus) for exporting data.
+*   **Security**:
+    *   [Flutter Secure Storage](https://pub.dev/packages/flutter_secure_storage) for keychain management.
+    *   [Encrypt](https://pub.dev/packages/encrypt) for AES operations.
+    *   [Local Auth](https://pub.dev/packages/local_auth) for biometrics.
 
 ## 🚀 Getting Started
 
