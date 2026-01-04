@@ -7,10 +7,54 @@ class AuthService with ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
+  bool _hasCloudKey = false;
+  bool get hasCloudKey => _hasCloudKey;
+
   AuthService() {
     _auth.authStateChanges().listen((user) {
+      if (user != null) {
+        checkForCloudKey();
+      } else {
+        _hasCloudKey = false;
+        _isMpinVerified = false;
+      }
       notifyListeners();
     });
+  }
+
+  Future<void> checkForCloudKey() async {
+    final user = _auth.currentUser;
+    if (user != null) {
+      final doc = await _firestore.collection('users').doc(user.uid).get();
+      if (doc.exists && doc.data()!.containsKey('encrypted_key')) {
+        _hasCloudKey = true;
+      } else {
+        _hasCloudKey = false;
+      }
+      notifyListeners();
+    }
+  }
+
+  Future<String?> getCloudKey() async {
+    final user = _auth.currentUser;
+    if (user != null) {
+      final doc = await _firestore.collection('users').doc(user.uid).get();
+      if (doc.exists && doc.data()!.containsKey('encrypted_key')) {
+        return doc.data()!['encrypted_key'] as String;
+      }
+    }
+    return null;
+  }
+
+  Future<void> saveCloudKey(String encryptedKey) async {
+    final user = _auth.currentUser;
+    if (user != null) {
+      await _firestore.collection('users').doc(user.uid).set({
+        'encrypted_key': encryptedKey,
+      }, SetOptions(merge: true));
+      _hasCloudKey = true;
+      notifyListeners();
+    }
   }
 
   // Auth State Changes Stream
@@ -45,6 +89,8 @@ class AuthService with ChangeNotifier {
           'lastLogin': FieldValue.serverTimestamp(),
         });
 
+        // No key yet, naturally.
+
         return user;
       }
       return null;
@@ -71,6 +117,8 @@ class AuthService with ChangeNotifier {
         await _firestore.collection('users').doc(credential.user!.uid).update({
           'lastLogin': FieldValue.serverTimestamp(),
         });
+        // Check for key immediately upon sign in
+        await checkForCloudKey();
       }
 
       return credential.user;
@@ -110,6 +158,8 @@ class AuthService with ChangeNotifier {
           'displayName': user.displayName,
           'lastLogin': FieldValue.serverTimestamp(),
         }, SetOptions(merge: true));
+
+        await checkForCloudKey();
       }
 
       return user;

@@ -110,11 +110,18 @@ class AppRouter {
           // If already on MPIN screen, let it stay
           if (isMpin) return null;
 
-          // Check if MPIN exists
-          final hasMpin = await SecureStorageService.instance.hasMPIN();
-          if (hasMpin) {
+          // Check if MPIN exists locally
+          final hasLocalMpin = await SecureStorageService.instance.hasMPIN();
+
+          if (hasLocalMpin) {
             return '/mpin?mode=verify';
-          } else {
+          }
+          // Check if MPIN exists in Cloud (Recovery Mode)
+          else if (authService.hasCloudKey) {
+            return '/mpin?mode=verify'; // Treat as verify for recovery
+          }
+          // Fresh Setup
+          else {
             return '/mpin?mode=setup';
           }
         }

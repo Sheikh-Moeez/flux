@@ -61,6 +61,8 @@ class FinanceProvider with ChangeNotifier {
 
   Future<void> loadData() async {
     await _initNotifications();
+
+    // Attempt init. If false, we wait for manual refreshData() call from MPIN Screen.
     await EncryptionService.instance.init();
 
     // Listen to auth changes to update streams automatically
@@ -70,9 +72,14 @@ class FinanceProvider with ChangeNotifier {
     });
   }
 
+  void refreshData() {
+    _subscribeToStreams();
+  }
+
   void _subscribeToStreams() {
     final user = _auth.currentUser;
-    if (user == null) {
+    // CRITICAL: Do not subscribe if Key is missing.
+    if (user == null || !EncryptionService.instance.isInitialized) {
       _transactions = [];
       _debts = [];
       _reminders = [];
@@ -89,8 +96,12 @@ class FinanceProvider with ChangeNotifier {
     ) {
       final List<TransactionItem> loaded = [];
       for (var doc in snapshot.docs) {
-        final data = EncryptionService.instance.decryptData(doc.data());
-        loaded.add(TransactionItem.fromMap(data, doc.id));
+        try {
+          final data = EncryptionService.instance.decryptData(doc.data());
+          loaded.add(TransactionItem.fromMap(data, doc.id));
+        } catch (e) {
+          debugPrint("Error decrypting transaction: $e");
+        }
       }
       // Sort locally: Date Descending
       loaded.sort((a, b) => b.date.compareTo(a.date));
@@ -105,8 +116,12 @@ class FinanceProvider with ChangeNotifier {
     ) {
       final List<Debt> loaded = [];
       for (var doc in snapshot.docs) {
-        final data = EncryptionService.instance.decryptData(doc.data());
-        loaded.add(Debt.fromMap(data, doc.id));
+        try {
+          final data = EncryptionService.instance.decryptData(doc.data());
+          loaded.add(Debt.fromMap(data, doc.id));
+        } catch (e) {
+          debugPrint("Error decrypting debt: $e");
+        }
       }
       // Sort locally: Due Date Ascending
       loaded.sort((a, b) => a.dueDate.compareTo(b.dueDate));
@@ -121,8 +136,12 @@ class FinanceProvider with ChangeNotifier {
     ) {
       final List<Reminder> loaded = [];
       for (var doc in snapshot.docs) {
-        final data = EncryptionService.instance.decryptData(doc.data());
-        loaded.add(Reminder.fromMap(data, doc.id));
+        try {
+          final data = EncryptionService.instance.decryptData(doc.data());
+          loaded.add(Reminder.fromMap(data, doc.id));
+        } catch (e) {
+          debugPrint("Error decrypting reminder: $e");
+        }
       }
       // Sort locally: Due Date Ascending
       loaded.sort((a, b) => a.dueDate.compareTo(b.dueDate));
