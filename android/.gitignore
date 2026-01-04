@@ -1,14 +1,91 @@
-gradle-wrapper.jar
-/.gradle
-/captures/
-/gradlew
-/gradlew.bat
-/local.properties
-GeneratedPluginRegistrant.java
-.cxx/
+# -----------------------
+# MISCELLANEOUS & OS
+# -----------------------
+.DS_Store
+.atom/
+.buildlog/
+.history
+.svn/
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+Thumbs.db
+ehthumbs.db
+Desktop.ini
 
-# Remember to never publicly share your keystore.
-# See https://flutter.dev/to/reference-keystore
+# -----------------------
+# FLUTTER / DART
+# -----------------------
+.dart_tool/
+.packages
+.pub/
+build/
+flutter_export_environment.sh
+.flutter-plugins
+.flutter-plugins-dependencies
+
+# -----------------------
+# ANDROID (The Critical Part)
+# -----------------------
+# Gradle Cache & Build
+.gradle/
+android/.gradle/
+android/app/build/
+android/build/
+
+# Local Configuration (Never commit this)
+local.properties
+android/local.properties
+
+# 🛑 SECURITY: KEYSTORES & PASSWORDS
+# These files contain your private signing keys.
+# If you commit these, hackers can hijack your app updates.
 key.properties
+android/key.properties
 **/*.keystore
 **/*.jks
+**/*.p12
+**/*.pfX
+
+# Native libraries
+android/app/libs/
+android/app/src/main/jniLibs/
+
+# Gradle Wrapper (Optional: Most teams commit the wrapper script, but ignore the jar)
+# gradle-wrapper.jar
+
+# -----------------------
+# IOS / MACOS
+# -----------------------
+ios/Flutter/App.framework
+ios/Flutter/Flutter.framework
+ios/Flutter/Generated.xcconfig
+ios/Flutter/app.flx
+ios/Flutter/app.zip
+ios/Flutter/flutter_assets/
+ios/ServiceDefinitions.json
+ios/Runner/GeneratedPluginRegistrant.*
+
+# CocoaPods (Dependencies)
+ios/Pods/
+macos/Pods/
+**/Pods/
+
+# Xcode State
+**/*.xccheckout
+**/*.moved-aside
+**/*.xcuserstate
+*.canvases
+*.derive
+*.obj
+*.pch
+*.pdb
+*.idb
+*.mode1v3
+*.mode2v3
+*.perspectivev3
+*.pbuser
+*.xccheckout
+*.xcscmblueprint

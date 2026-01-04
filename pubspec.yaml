@@ -55,6 +55,7 @@ dependencies:
   flutter_secure_storage: ^10.0.0
   encrypt: ^5.0.3
   local_auth: ^3.0.0
+  change_app_package_name: ^1.5.0
 
 dev_dependencies:
   flutter_test:

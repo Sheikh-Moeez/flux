@@ -291,12 +291,13 @@ class FinanceProvider with ChangeNotifier {
 
   Future<String> exportToCsv() async {
     final List<List<dynamic>> rows = [];
-    rows.add(["Title", "Amount", "Type", "Date", "Category"]);
+    rows.add(["Title", "Debit", "Credit", "Type", "Date", "Category"]);
 
     for (var t in _transactions) {
       rows.add([
         t.title,
-        t.amount,
+        t.isExpense ? t.amount : "", // Debit (Expense)
+        !t.isExpense ? t.amount : "", // Credit (Income)
         t.isExpense ? "Expense" : "Income",
         t.date.toIso8601String(),
         t.category,

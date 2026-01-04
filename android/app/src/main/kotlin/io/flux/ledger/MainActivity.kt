@@ -1,4 +1,4 @@
-package com.example.flux
+package io.flux.ledger
 
 import io.flutter.embedding.android.FlutterFragmentActivity
 
